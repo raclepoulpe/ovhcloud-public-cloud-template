@@ -1,3 +1,5 @@
+FROM gitpod/workspace-base:latest
+
 RUN sudo apt update && sudo apt -y install \
     gettext \
     jq \
