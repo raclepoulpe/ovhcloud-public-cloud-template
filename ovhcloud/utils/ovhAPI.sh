@@ -39,8 +39,6 @@ case $METHOD in
         TESTRESULT=2
         exit $TESTRESULT;;
 esac
-# QUERY
-# [TODO/maybe]
 
 # Function SHA1_HEX
 function SHA1_HEX {
@@ -48,12 +46,20 @@ function SHA1_HEX {
 }
 
 # Set API variables & signature
-FULLQUERY="https://api.ovh.com/1.0${QUERY}"
-TIMESTAMP="$(curl -s https://api.ovh.com/1.0/auth/time)"
+FULLQUERY="${OVH_BASEURL}${QUERY}"
+TIMESTAMP="$(curl -s ${OVH_BASEURL}/auth/time)"
 METHOD="${METHOD}"
 PRESIGNATURE="${OVH_APPLICATION_SECRET}+${OVH_CONSUMER_KEY}+${METHOD}+${FULLQUERY}+${BODY}+${TIMESTAMP}"
 SIGNATURE="\$1\$$(SHA1_HEX "${PRESIGNATURE}")"
 
 # Execute the request
-curl -s -X${METHOD} -H "X-Ovh-Application:${OVH_APPLICATION_KEY}" -H "X-Ovh-Timestamp:${TIMESTAMP}" -H "X-Ovh-Signature:${SIGNATURE}" -H "X-Ovh-Consumer:${OVH_CONSUMER_KEY}" -H 'Content-Type:application/json;charset=UTF-8' -d "$BODY" ${FULLQUERY}
 
+http_response=$(curl -s -o http_response.json -w "%{http_code}" -X${METHOD} -H "X-Ovh-Application:${OVH_APPLICATION_KEY}" -H "X-Ovh-Timestamp:${TIMESTAMP}" -H "X-Ovh-Signature:${SIGNATURE}" -H "X-Ovh-Consumer:${OVH_CONSUMER_KEY}" -H 'Content-Type:application/json;charset=UTF-8' -d "$BODY" ${FULLQUERY})
+if [ $http_response != "200" ]
+then
+    echo "ERROR - The request returned a $http_response status code"
+    cat http_response.json && rm http_response.json && echo ""
+    exit $http_response
+else
+    cat http_response.json && rm http_response.json
+fi
